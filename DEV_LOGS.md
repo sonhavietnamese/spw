@@ -1,4 +1,4 @@
-- 9 Feb 2025
+## 9 Feb 2025
 
 -- Goal: Experimenting `Bundler` (aka Relayer) and `Paymaster` (aka Sponsor)
 --- check how evm bundler works
@@ -13,3 +13,9 @@
 
 --- flow should be like this:
 ix has bundler's address, paymaster's address -> passkey'signature -> bundler -> bundler parse ix -> paymaster involved -> partial sign -> send to pda -> verify ops -> do the tx
+
+hey what about an account extension?
+- will call it as gas-station
+- an extension that can create a boundary for a account fee
+- any transaction interact with the pda/account, the fee will be charged from gas-station
+- the extension will be a pda, and the balance will be from the gas-station
