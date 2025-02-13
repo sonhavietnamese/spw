@@ -19,3 +19,7 @@ hey what about an account extension?
 - an extension that can create a boundary for a account fee
 - any transaction interact with the pda/account, the fee will be charged from gas-station
 - the extension will be a pda, and the balance will be from the gas-station
+
+- when sign the tx, need bundler's address in the account array
+
+- bundler will act as a paymaster too

@@ -1,5 +1,5 @@
 {
-  "name": "passkey-wallet",
+  "name": "spw",
   "private": true,
   "scripts": {
     "build": "turbo build",
