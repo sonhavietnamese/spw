@@ -4,15 +4,15 @@
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-test_anchor_2 = "PhaARiQBd8a2AcH239Hzf84EM3KLNP1JGEP9CUeZfvE"
+[programs.devnet]
+spw = "7H8vjmfu5v5ou2RhTXDMbi5zp6JyQC744h8vwoPWjtNt"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+cluster = "devnet"
+wallet = "./keypair-deployer.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

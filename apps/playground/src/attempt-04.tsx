@@ -1,5 +1,6 @@
 import { bufferToHex, toBase64url } from '@passwordless-id/webauthn/dist/esm/utils'
 import { isoBase64URL, isoUint8Array, toHash } from '@simplewebauthn/server/helpers'
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js'
 
 const CREATE_CHALLENGE = 'create-passkey'
 const SIGN_CHALLENGE = 'hello'
@@ -77,8 +78,53 @@ export default function Attempt04() {
     const rawKeyBytes = bytes.slice(keyStart)
     log('>> converted: publicKey bytes', rawKeyBytes)
 
+    const x = rawKeyBytes.slice(1, 33)
+    const y = rawKeyBytes.slice(33, 65)
+
+    log('>> converted: publicKey x', Array.from(x).join(','))
+    log('>> converted: publicKey y', Array.from(y).join(','))
+
     const publicKeyHex = bufferToHex(rawKeyBytes)
     log('>> converted: publicKey hex', publicKeyHex)
+  }
+
+  const craftInstruction = async () => {
+    const transferAmount = 0.01 // 0.01 SOL
+
+    // Instruction index for the SystemProgram transfer instruction
+    const transferInstructionIndex = 2
+
+    // Create a buffer for the data to be passed to the transfer instruction
+    const instructionData = Buffer.alloc(4 + 8) // uint32 + uint64
+    // Write the instruction index to the buffer
+    instructionData.writeUInt32LE(transferInstructionIndex, 0)
+    // Write the transfer amount to the buffer
+    instructionData.writeBigUInt64LE(BigInt(transferAmount * LAMPORTS_PER_SOL), 4)
+
+    const sender = Keypair.generate()
+    const receiver = Keypair.generate()
+
+    const ix = new TransactionInstruction({
+      keys: [
+        { pubkey: sender.publicKey, isSigner: true, isWritable: true },
+        { pubkey: receiver.publicKey, isSigner: false, isWritable: true },
+      ],
+      programId: SystemProgram.programId,
+      data: instructionData,
+    })
+
+    await fetch('http://localhost:3501/api/v1/prepare', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ix }),
+    })
+
+    // Add the transfer instruction to a new transaction
+    // const transaction = new Transaction().add(transferInstruction)
+
+    // log('transaction', transaction)
   }
 
   const sign = async () => {
@@ -126,6 +172,9 @@ export default function Attempt04() {
 
   return (
     <div className='flex bg-gray-700 w-screen h-screen flex-col  text-white p-10 gap-5'>
+      <button className='px-4 py-2 bg-black' onClick={craftInstruction}>
+        Craft Instruction
+      </button>
       <button className='px-4 py-2 bg-black' onClick={create}>
         Create
       </button>

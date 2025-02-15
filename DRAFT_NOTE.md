@@ -60,3 +60,14 @@ message: [72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33]
       140, 178,  48,  86,  62, 110, 216,  49,   5,  71,  21, 109,
         5, 212, 193, 107,  95
     ]
+
+
+
+- to verify:
+we need instruction data
+ix data is constructed by:
+- number of signatures
+- signature
+- pubkey
+- message
+

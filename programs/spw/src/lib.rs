@@ -6,10 +6,12 @@ declare_id!("7H8vjmfu5v5ou2RhTXDMbi5zp6JyQC744h8vwoPWjtNt");
 pub mod spw {
     use super::*;
 
-    pub fn create_wallet(ctx: Context<CreateWallet>, r: u64, s: u64) -> Result<()> {
+    pub fn create_wallet(ctx: Context<CreateWallet>, x: Vec<u8>, y: Vec<u8>) -> Result<()> {
         let wallet = &mut ctx.accounts.wallet;
-        wallet.r = r;
-        wallet.s = s;
+        wallet.x = x;
+        wallet.y = y;
+
+        // TODO: validate x and y
 
         Ok(())
     }
@@ -24,11 +26,12 @@ pub mod spw {
 
 #[account]
 pub struct Wallet {
-    pub r: u64,
-    pub s: u64,
+    pub x: Vec<u8>,
+    pub y: Vec<u8>,
 }
 
 #[derive(Accounts)]
+#[instruction(x: Vec<u8>, y: Vec<u8>)]
 pub struct CreateWallet<'info> {
     /// The program pays for the vault creation
     #[account(mut)]
@@ -37,15 +40,12 @@ pub struct CreateWallet<'info> {
     /// The vault PDA account with data
     #[account(
         init,
-        seeds = [b"WALLET", authority.key().as_ref()],
-        bump,
         payer = payer,
-        space = 8 + 8 + 8 
+        space = 8 + 4 + 1 * 32 + 4 + 1 * 32,
+        seeds = [b"WALLET", x.as_slice(), y.as_slice()],
+        bump,
     )]
     pub wallet: Account<'info, Wallet>,
-
-    /// The authority (signer) for the vault
-    pub authority: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 }
@@ -53,11 +53,7 @@ pub struct CreateWallet<'info> {
 #[derive(Accounts)]
 pub struct Transfer<'info> {
     /// The vault PDA account
-    #[account(
-        mut,
-        seeds = [b"WALLET", authority.key().as_ref()],
-        bump,
-    )]
+    #[account(mut)]
     pub wallet: Account<'info, Wallet>,
 
     /// The authority (signer) for the vault
