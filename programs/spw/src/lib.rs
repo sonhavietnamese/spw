@@ -1,22 +1,21 @@
 use anchor_lang::prelude::*;
 
-declare_id!("FXrwbz22nusEEic4Z188VYwk9gjwHvHHHgSJ34gJ1pwn");
+declare_id!("7H8vjmfu5v5ou2RhTXDMbi5zp6JyQC744h8vwoPWjtNt");
 
 #[program]
-pub mod vault_factory {
+pub mod spw {
     use super::*;
 
-    pub fn create_vault(ctx: Context<CreateVault>, x: u64, y: u64) -> Result<()> {
-        // Initialize the vault's data
-        let vault = &mut ctx.accounts.vault;
-        vault.x = x;
-        vault.y = y;
+    pub fn create_wallet(ctx: Context<CreateWallet>, r: u64, s: u64) -> Result<()> {
+        let wallet = &mut ctx.accounts.wallet;
+        wallet.r = r;
+        wallet.s = s;
 
         Ok(())
     }
 
     pub fn transfer(ctx: Context<Transfer>, amount: u64) -> Result<()> {
-        ctx.accounts.vault.sub_lamports(amount)?;
+        ctx.accounts.wallet.sub_lamports(amount)?;
         ctx.accounts.recipient.add_lamports(amount)?;
 
         Ok(())
@@ -24,13 +23,13 @@ pub mod vault_factory {
 }
 
 #[account]
-pub struct Vault {
-    pub x: u64,
-    pub y: u64,
+pub struct Wallet {
+    pub r: u64,
+    pub s: u64,
 }
 
 #[derive(Accounts)]
-pub struct CreateVault<'info> {
+pub struct CreateWallet<'info> {
     /// The program pays for the vault creation
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -38,12 +37,12 @@ pub struct CreateVault<'info> {
     /// The vault PDA account with data
     #[account(
         init,
-        seeds = [b"VAULT", authority.key().as_ref()],
+        seeds = [b"WALLET", authority.key().as_ref()],
         bump,
         payer = payer,
-        space = 8 + 8 + 8  // discriminator + x + y
+        space = 8 + 8 + 8 
     )]
-    pub vault: Account<'info, Vault>,
+    pub wallet: Account<'info, Wallet>,
 
     /// The authority (signer) for the vault
     pub authority: Signer<'info>,
@@ -56,10 +55,10 @@ pub struct Transfer<'info> {
     /// The vault PDA account
     #[account(
         mut,
-        seeds = [b"VAULT", authority.key().as_ref()],
+        seeds = [b"WALLET", authority.key().as_ref()],
         bump,
     )]
-    pub vault: Account<'info, Vault>,
+    pub wallet: Account<'info, Wallet>,
 
     /// The authority (signer) for the vault
     pub authority: Signer<'info>,
