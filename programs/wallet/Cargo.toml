@@ -1,12 +1,12 @@
 [package]
-name = "test-anchor-2"
+name = "wallet"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "test_anchor_2"
+name = "wallet"
 
 [features]
 default = []
