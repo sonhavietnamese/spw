@@ -1,24 +1,37 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{
+    instruction::Instruction,
+    sysvar::instructions::{load_instruction_at_checked, ID as IX_ID},
+};
+use solana_feature_set::FeatureSet;
+use solana_secp256r1_program::verify;
 
 declare_id!("7H8vjmfu5v5ou2RhTXDMbi5zp6JyQC744h8vwoPWjtNt");
 
 #[program]
 pub mod spw {
+
     use super::*;
 
-    pub fn create_wallet(ctx: Context<CreateWallet>, x: Vec<u8>, y: Vec<u8>) -> Result<()> {
+    pub fn create_wallet(ctx: Context<CreateWallet>, pubkey: [u8; 33]) -> Result<()> {
         let wallet = &mut ctx.accounts.wallet;
-        wallet.x = x;
-        wallet.y = y;
-
-        // TODO: validate x and y
+        wallet.pubkey = pubkey;
+        wallet.bump = ctx.bumps.wallet;
 
         Ok(())
     }
 
-    pub fn transfer(ctx: Context<Transfer>, amount: u64) -> Result<()> {
-        ctx.accounts.wallet.sub_lamports(amount)?;
-        ctx.accounts.recipient.add_lamports(amount)?;
+    pub fn execute(ctx: Context<Execute>, pubkey: [u8; 33]) -> Result<()> {
+        let wallet = &mut ctx.accounts.wallet;
+
+        require!(wallet.pubkey == pubkey, SpwError::NotAuthorized);
+
+        let ix: Instruction = load_instruction_at_checked(0, &ctx.accounts.ix_sysvar)?;
+
+        require!(
+            verify(&ix.data, &[], &FeatureSet::all_enabled()).is_ok(),
+            SpwError::InvalidSignature
+        );
 
         Ok(())
     }
@@ -26,12 +39,12 @@ pub mod spw {
 
 #[account]
 pub struct Wallet {
-    pub x: Vec<u8>,
-    pub y: Vec<u8>,
+    pub pubkey: [u8; 33],
+    pub bump: u8,
 }
 
 #[derive(Accounts)]
-#[instruction(x: Vec<u8>, y: Vec<u8>)]
+#[instruction(pubkey: [u8; 33])]
 pub struct CreateWallet<'info> {
     /// The program pays for the vault creation
     #[account(mut)]
@@ -41,8 +54,8 @@ pub struct CreateWallet<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 4 + 1 * 32 + 4 + 1 * 32,
-        seeds = [b"WALLET", x.as_slice(), y.as_slice()],
+        space = 8 + 1 * 33 + 1,
+        seeds = [b"WALLET", pubkey.as_slice()],
         bump,
     )]
     pub wallet: Account<'info, Wallet>,
@@ -51,17 +64,26 @@ pub struct CreateWallet<'info> {
 }
 
 #[derive(Accounts)]
-pub struct Transfer<'info> {
-    /// The vault PDA account
-    #[account(mut)]
+#[instruction(pubkey: [u8; 33])]
+pub struct Execute<'info> {
+    #[account(mut, seeds = [b"WALLET", pubkey.as_slice()], bump = wallet.bump)]
     pub wallet: Account<'info, Wallet>,
 
-    /// The authority (signer) for the vault
-    pub authority: Signer<'info>,
-
-    /// The recipient of the transfer
-    #[account(mut)]
-    pub recipient: SystemAccount<'info>,
-
     pub system_program: Program<'info, System>,
+
+    /// CHECK: The address check is needed because otherwise
+    /// the supplied Sysvar could be anything else.
+    /// The Instruction Sysvar has not been implemented
+    /// in the Anchor framework yet, so this is the safe approach.
+    #[account(address = IX_ID)]
+    pub ix_sysvar: AccountInfo<'info>,
+}
+
+#[error_code]
+pub enum SpwError {
+    #[msg("spw: invalid signature")]
+    InvalidSignature,
+
+    #[msg("spw: not authorized")]
+    NotAuthorized,
 }

@@ -1,3 +1,5 @@
+import { p256 } from '@noble/curves/p256'
+
 export type Secp256r1SignatureOffsets = {
   signatureOffset: number
   signatureInstructionIndex: number
@@ -31,21 +33,9 @@ export const SECP256R1_HALF_ORDER: Uint8Array = new Uint8Array([
 
 export const FIELD_SIZE = 32
 
-export async function newInstruction(): Promise<Uint8Array> {
-  const publicKeyHex =
-    '04cdfc52917e67195204e0a5a218d12cd2e32b7caceb977e200c92022f3f6952ebf96c869d3450803eecfda119a2a1aaf1cc7a8d336c4800f068135eaafa2091ab'
-  const signatureHex =
-    '304402202e18b2d789ede3626c804f6248224d17b3a9c007bcf5f896f16183ea30b3fa490220026b72e98d41718b1cb1b259382e7903d3836f8632a0978d9cc6a9ffd689b855' // from passkey (webauthn)
-  const messageHex =
-    '49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000a907a3b1e88d68dacd386df18f8e1c4289a0e5b70e31270c837dab0cb2194f2d' // "hello" in hex
-
-  // Convert hex strings to Uint8Arrays
-  const message = hexToUint8Array(messageHex)
-  const publicKeyBytes = hexToUint8Array(publicKeyHex)
-  const signatureBytes = hexToUint8Array(signatureHex)
-
+export async function newInstruction(publicKey: Uint8Array, signatureRaw: Uint8Array, message: Uint8Array): Promise<Uint8Array> {
   // Convert DER signature to R and S components
-  const { r, s } = derToRS(signatureBytes)
+  const { r, s } = derToRS(signatureRaw)
 
   // Create signature array
   const signature = new Uint8Array(SIGNATURE_SERIALIZED_SIZE)
@@ -65,7 +55,7 @@ export async function newInstruction(): Promise<Uint8Array> {
   }
 
   // Convert uncompressed public key to compressed format
-  const compressedPubKey = compressPublicKey(publicKeyBytes)
+  const compressedPubKey = compressPublicKey(publicKey)
 
   // Create instruction data
   const instructionData = new Uint8Array(DATA_START + SIGNATURE_SERIALIZED_SIZE + COMPRESSED_PUBKEY_SERIALIZED_SIZE + message.length)
@@ -100,14 +90,6 @@ export async function newInstruction(): Promise<Uint8Array> {
 }
 
 // Helper functions
-
-function hexToUint8Array(hex: string): Uint8Array {
-  const matches = hex.match(/.{1,2}/g)
-  if (!matches) {
-    throw new Error('Invalid hex string')
-  }
-  return new Uint8Array(matches.map((byte) => parseInt(byte, 16)))
-}
 
 function padToLength(array: Uint8Array, length: number): Uint8Array {
   const result = new Uint8Array(length)
@@ -152,27 +134,20 @@ function subtractUint8Arrays(a: Uint8Array, b: Uint8Array): Uint8Array {
 }
 
 function derToRS(der: Uint8Array): { r: Uint8Array; s: Uint8Array } {
-  // Simple DER parser - assumes valid DER format
-  let offset = 2 // Skip sequence tag and length
+  const signature = p256.Signature.fromDER(der)
 
-  // Get R value
-  offset++ // Skip integer tag
-  const rLen = der[offset++]
-  if (rLen === undefined) {
-    throw new Error('Invalid DER format: R length not found')
+  const rBytes = new Uint8Array(32)
+  const sBytes = new Uint8Array(32)
+
+  const rHex = signature.r.toString(16).padStart(64, '0')
+  const sHex = signature.s.toString(16).padStart(64, '0')
+
+  for (let i = 0; i < 32; i++) {
+    rBytes[i] = parseInt(rHex.slice(i * 2, (i + 1) * 2), 16)
+    sBytes[i] = parseInt(sHex.slice(i * 2, (i + 1) * 2), 16)
   }
-  const r = der.slice(offset, offset + rLen)
-  offset += rLen
 
-  // Get S value
-  offset++ // Skip integer tag
-  const sLen = der[offset++]
-  if (sLen === undefined) {
-    throw new Error('Invalid DER format: S length not found')
-  }
-  const s = der.slice(offset, offset + sLen)
-
-  return { r, s }
+  return { r: rBytes, s: sBytes }
 }
 
 function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
@@ -180,16 +155,14 @@ function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
     throw new Error('Invalid uncompressed public key length')
   }
 
-  // Assuming uncompressed key starts with 0x04 and is 65 bytes
   const compressedKey = new Uint8Array(33)
-  // Set prefix to 0x02 or 0x03 depending on y-coordinate's least significant bit
   const yCoordinate = uncompressedKey[64]
   if (yCoordinate === undefined) {
     throw new Error('Invalid public key format')
   }
   compressedKey[0] = yCoordinate & 1 ? 0x03 : 0x02
-  // Copy x-coordinate
   compressedKey.set(uncompressedKey.slice(1, 33), 1)
+
   return compressedKey
 }
 

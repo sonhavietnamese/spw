@@ -89,9 +89,9 @@ pub fn test_verify() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn new_instruction() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let public_key_hex = "04c9d4b3d2e6ddcf0bf6f23447f8c8cab52d6235920b51991636770c57a65aff0a8732584c5f246db6e4cb0aa06355f5ec3eec145e7a402110d43c2a2238cd3647";
-    let signature_hex = "3044022009af0709c6ba8931a2c1c9479a4d41c08c05af11932dd1b3d41b32575dccfbd902205c8e3a9735d6950bd21cb43bb8f46f64ef9ca1bca30a5b215be2980da1da83b0"; // from passkey (webauthn)
-    let message_hex = "49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000bbf3b690ed9a75a60167f6c428a9196363eb134d56ffcae82c6e615e4f2c0735"; // "hello" in hex
+    let public_key_hex = "0491e43cb638355ce51c79d5cbb10a4429306254996576f21c48658c3a2d36eb01989c8f754a07b830d99df263acd60049ed5653b3fa85761fce7b83a0595505e6";
+    let signature_hex = "3046022100a4a9c655b34d5e01890b821fbc42b0e4359d2a4d358040d9723949b7da97cdaa022100ecf4714949cc039b68eb70de85500bb3416d837515e39673061f23f31fd84028"; // from passkey (webauthn)
+    let message_hex = "49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000a907a3b1e88d68dacd386df18f8e1c4289a0e5b70e31270c837dab0cb2194f2d"; // "hello" in hex
 
     let message = hex::decode(message_hex)?;
 
