@@ -5,13 +5,13 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-spw = "7H8vjmfu5v5ou2RhTXDMbi5zp6JyQC744h8vwoPWjtNt"
+spw = "EEEndbjqETkwEx65o968iHXbHaFs1TPVMvsh3aA3hkgQ"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "Devnet"
 wallet = "./keypair-deployer.json"
 
 [scripts]

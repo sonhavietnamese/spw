@@ -89,7 +89,7 @@ pub fn test_verify() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn new_instruction() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let public_key_hex = "0491e43cb638355ce51c79d5cbb10a4429306254996576f21c48658c3a2d36eb01989c8f754a07b830d99df263acd60049ed5653b3fa85761fce7b83a0595505e6";
+    let public_key_hex = "04b89dcd439145a97e8a64d462a1b86f1632b1c61945035c44a7e49b756694e6b754536b862fa0c66602d99412628b2dae5a06edc3f9ef84626e0593d760d4a459";
     let signature_hex = "3046022100a4a9c655b34d5e01890b821fbc42b0e4359d2a4d358040d9723949b7da97cdaa022100ecf4714949cc039b68eb70de85500bb3416d837515e39673061f23f31fd84028"; // from passkey (webauthn)
     let message_hex = "49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000a907a3b1e88d68dacd386df18f8e1c4289a0e5b70e31270c837dab0cb2194f2d"; // "hello" in hex
 
@@ -107,6 +107,8 @@ pub fn new_instruction() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         openssl::ec::PointConversionForm::COMPRESSED,
         &mut ctx,
     )?;
+
+    println!("pubkey: {:?}", pubkey);
 
     let signature_bytes = hex::decode(signature_hex)?;
 

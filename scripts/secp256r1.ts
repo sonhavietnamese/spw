@@ -110,31 +110,33 @@ export class Secp256r1 {
     // Convert uncompressed public key to compressed format
     const compressedPubKey = compressPublicKey(publicKey)
 
-    const instructionData = Buffer.alloc(SECP256R1_INSTRUCTION_LAYOUT.span + message.length)
+    console.log('compressedPubKey', compressedPubKey)
 
-    const numSignatures = 1
-    const publicKeyOffset = DATA_START
-    const signatureOffset = publicKeyOffset + COMPRESSED_PUBKEY_SERIALIZED_SIZE
-    const messageDataOffset = signatureOffset + SIGNATURE_SERIALIZED_SIZE
+    // const instructionData = Buffer.alloc(SECP256R1_INSTRUCTION_LAYOUT.span + message.length)
 
-    SECP256R1_INSTRUCTION_LAYOUT.encode(
-      {
-        numSignatures,
-        signatureOffset,
-        signatureInstructionIndex: 65535, // u16::MAX
-        publicKeyOffset,
-        publicKeyInstructionIndex: 65535, // u16::MAX
-        messageDataOffset,
-        messageDataSize: message.length,
-        messageInstructionIndex: 65535, // u16::MAX
+    // const numSignatures = 1
+    // const publicKeyOffset = DATA_START
+    // const signatureOffset = publicKeyOffset + COMPRESSED_PUBKEY_SERIALIZED_SIZE
+    // const messageDataOffset = signatureOffset + SIGNATURE_SERIALIZED_SIZE
 
-        publicKey: compressedPubKey,
-        signature: serializedSignature,
-      },
-      instructionData as unknown as Uint8Array,
-    )
+    // SECP256R1_INSTRUCTION_LAYOUT.encode(
+    //   {
+    //     numSignatures,
+    //     signatureOffset,
+    //     signatureInstructionIndex: 0xffff, // u16::MAX
+    //     publicKeyOffset,
+    //     publicKeyInstructionIndex: 0xffff, // u16::MAX
+    //     messageDataOffset,
+    //     messageDataSize: message.length,
+    //     messageInstructionIndex: 0xffff, // u16::MAX
 
-    instructionData.fill(message, SECP256R1_INSTRUCTION_LAYOUT.span)
+    //     publicKey: compressedPubKey,
+    //     signature: serializedSignature,
+    //   },
+    //   instructionData as unknown as Uint8Array,
+    // )
+
+    // instructionData.fill(message, SECP256R1_INSTRUCTION_LAYOUT.span)
 
     return new TransactionInstruction({
       keys: [],

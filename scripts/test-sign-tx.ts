@@ -1,16 +1,12 @@
 import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
-import { Connection, PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
+import { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import { Buffer } from 'buffer'
 import aliceKeypair from '../keypair-alice.json'
 import bundlerKeypair from '../keypair-bundler.json'
 import IDL from '../target/idl/spw.json'
 import type { Spw } from '../target/types/spw'
-import { Buffer } from 'buffer'
-import * as BufferLayout from '@solana/buffer-layout'
-// import { newInstruction } from '@repo/shared'
 import { Secp256r1 } from './secp256r1'
-
-anchor.web3.Secp256k1Program
 
 const rpc = 'https://devnet.helius-rpc.com/?api-key=8a2fb691-6f48-47f8-910c-97c8211e422e'
 const connection = new Connection(rpc, 'confirmed')
@@ -33,9 +29,19 @@ export type CreateSecp256r1InstructionWithPublicKeyParams = {
   instructionIndex?: number
 }
 
+// >> converted: publicKey hex 04b89dcd439145a97e8a64d462a1b86f1632b1c61945035c44a7e49b756694e6b754536b862fa0c66602d99412628b2dae5a06edc3f9ef84626e0593d760d4a459
+// >> converted: publicKey x 184,157,205,67,145,69,169,126,138,100,212,98,161,184,111,22,50,177,198,25,69,3,92,68,167,228,155,117,102,148,230,183
+// >> converted: publicKey y 84,83,107,134,47,160,198,102,2,217,148,18,98,139,45,174,90,6,237,195,249,239,132,98,110,5,147,215,96,212,164,89
+// >> compress publickey [ 3, 184, 157, 205, 67, 145, 69, 169, 126, 138, 100, 212, 98, 161, 184, 111, 22, 50, 177, 198, 25, 69, 3, 92, 68, 167, 228, 155, 117, 102, 148, 230, 183 ]
+
+const compressedPubKey = new Uint8Array([
+  3, 184, 157, 205, 67, 145, 69, 169, 126, 138, 100, 212, 98, 161, 184, 111, 22, 50, 177, 198, 25, 69, 3, 92, 68, 167, 228, 155, 117, 102, 148, 230,
+  183,
+])
+
 async function handle() {
   const publicKeyHex =
-    '0491e43cb638355ce51c79d5cbb10a4429306254996576f21c48658c3a2d36eb01989c8f754a07b830d99df263acd60049ed5653b3fa85761fce7b83a0595505e6'
+    '04b89dcd439145a97e8a64d462a1b86f1632b1c61945035c44a7e49b756694e6b754536b862fa0c66602d99412628b2dae5a06edc3f9ef84626e0593d760d4a459'
   const signatureHex =
     '3046022100a4a9c655b34d5e01890b821fbc42b0e4359d2a4d358040d9723949b7da97cdaa022100ecf4714949cc039b68eb70de85500bb3416d837515e39673061f23f31fd84028'
   const messageHex =
@@ -50,34 +56,33 @@ async function handle() {
     message,
     signature,
   })
-  console.log('instruction', instruction)
-  // const x = Buffer.from([
-  //   125, 213, 13, 45, 196, 46, 223, 79, 63, 222, 139, 247, 52, 219, 231, 1, 34, 110, 95, 51, 122, 250, 60, 41, 61, 255, 131, 20, 103, 129, 227, 224,
-  // ])
-  // const y = Buffer.from([
-  //   12, 31, 0, 203, 49, 207, 212, 227, 13, 9, 142, 104, 214, 12, 164, 226, 61, 7, 92, 17, 99, 171, 125, 235, 147, 15, 138, 126, 237, 40, 23, 90,
-  // ])
 
-  // const [pda, bump] = PublicKey.findProgramAddressSync([Buffer.from('WALLET'), x, y], PROGRAM_ID)
-
-  // const ix = await program.methods
-  //   .createWallet(x, y)
-  //   .accounts({
-  //     payer: bundler.publicKey,
-  //     wallet: pda,
-  //     systemProgram: SystemProgram.programId,
-  //   })
-  //   .signers([bundler.payer])
-  //   .instruction()
-
-  // const tx = new Transaction().add(ix)
-  // tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash
-  // tx.feePayer = bundler.publicKey
+  // const tx = new Transaction().add(instruction)
 
   // const txHash = await provider.sendAndConfirm(tx)
-  // console.log('Tx Hash: ', txHash)
+
+  // console.log('txHash', txHash)
+
+  // console.log('instruction', instruction)
+}
+
+async function createWallet() {
+  const [pda, bump] = PublicKey.findProgramAddressSync([Buffer.from('WALLET'), compressedPubKey], PROGRAM_ID)
+
+  const tx = await program.methods
+    .createWallet(Array.from(compressedPubKey))
+    .accounts({
+      wallet: pda,
+      payer: bundler.publicKey,
+    })
+    .signers([bundler.payer])
+    .rpc()
+
+  console.log('tx', tx)
 }
 
 // [ 1, 0, 49, 0, 255, 255, 16, 0, 255, 255, 113, 0, 69, 0, 255, 255, 2, 145, 228, 60, 182, 56, 53, 92, 229, 28, 121, 213, 203, 177, 10, 68, 41, 48, 98, 84, 153, 101, 118, 242, 28, 72, 101, 140, 58, 45, 54, 235, 1, 164, 169, 198, 85, 179, 77, 94, 1, 137, 11, 130, 31, 188, 66, 176, 228, 53, 157, 42, 77, 53, 128, 64, 217, 114, 57, 73, 183, 218, 151, 205, 170, 19, 11, 142, 181, 182, 51, 252, 101, 151, 20, 143, 33, 122, 175, 244, 76, 123, 121, 119, 56, 145, 52, 8, 17, 237, 154, 166, 207, 220, 138, 229, 41, 73, 150, 13, 229, 136, 14, 140, 104, 116, 52, 23, 15, 100, 118, 96, 91, 143, 228, 174, 185, 162, 134, 50, 199, 153, 92, 243, 186, 131, 29, 151, 99, 29, 0, 0, 0, 0, 169, 7, 163, 177, 232, 141, 104, 218, 205, 56, 109, 241, 143, 142, 28, 66, 137, 160, 229, 183, 14, 49, 39, 12, 131, 125, 171, 12, 178, 25, 79, 45 ]
 // [ 1, 0, 49, 0, 255, 255, 16, 0, 255, 255, 113, 0, 69, 0, 255, 255, 2, 145, 228, 60, 182, 56, 53, 92, 229, 28, 121, 213, 203, 177, 10, 68, 41, 48, 98, 84, 153, 101, 118, 242, 28, 72, 101, 140, 58, 45, 54, 235, 1, 164, 169, 198, 85, 179, 77, 94, 1, 137, 11, 130, 31, 188, 66, 176, 228, 53, 157, 42, 77, 53, 128, 64, 217, 114, 57, 73, 183, 218, 151, 205, 170, 19, 11, 142, 181, 182, 51, 252, 101, 151, 20, 143, 33, 122, 175, 244, 76, 123, 121, 119, 56, 145, 52, 8, 17, 237, 154, 166, 207, 220, 138, 229, 41, 73, 150, 13, 229, 136, 14, 140, 104, 116, 52, 23, 15, 100, 118, 96, 91, 143, 228, 174, 185, 162, 134, 50, 199, 153, 92, 243, 186, 131, 29, 151, 99, 29, 0, 0, 0, 0, 169, 7, 163, 177, 232, 141, 104, 218, 205, 56, 109, 241, 143, 142, 28, 66, 137, 160, 229, 183, 14, 49, 39, 12, 131, 125, 171, 12, 178, 25, 79, 45 ]
-handle()
+// handle()
+
+createWallet()
